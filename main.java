@@ -11,6 +11,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -28,7 +30,7 @@ public class main {
 	static char getCh(double x1, double h, double xo, char m) throws Exception{
 		String c11 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate text.png ch.png";
 		String c1 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate -bordercolor black -border 1x1 -fill white -floodfill +0+0 black -shave 1x1 text.png ch.png";
-		String c2 = "tesseract -c tessedit_char_whitelist=0123456789 -psm 10 "+ch+" out";
+		String c2 = "tesseract -psm 10 "+ch+" "+path+"out -c "+path+"config";
 		exec(String.format(c1, (int)x1, (int)h, (int)xo)).waitFor();
 		exec(c2).waitFor();
 		char c = 0;
@@ -62,9 +64,6 @@ public class main {
 		x2 = 10.0/w*w;
 		double xo = 0;
 		String f = "";
-		String c1 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate text.png ch.png";
-		String c11 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate -bordercolor black -border 1x1 -fill white -floodfill +0+0 black -shave 1x1 text.png ch.png";
-		String c2 = "tesseract -c tessedit_char_whitelist=0123456789 -psm 10 "+ch+" out";
 		f += getCh(x1, h, xo, '9');
 		xo += x1;
 		f += getCh(x1, h, xo, '9');
@@ -106,7 +105,8 @@ public class main {
 			while ((line = br.readLine ()) != null) {
 			    s += line;
 			}
-			if(s.contains("( 38, 38, 38)")){
+			print(s);
+			if(s.contains("38, 38, 38") || s.contains("28,28,28")){
 				skip();
 				return; 
 			}
@@ -129,7 +129,7 @@ public class main {
 			exec("convert "+out+" +repage -crop " + (x2-x1) + "x" + (y2-y1) + "+" + x1 + "+" +y1+ " " + text).waitFor();
 			exec("tesseract -psm 7 "+text+" out").waitFor();
 			String back = new String(Files.readAllBytes(Paths.get(path,"out.txt")));
-			if (back.toLowerCase().contains("back to browse")) {
+			if (back.toLowerCase().contains("back")) {
 				moveTo(x2, y2-0.1*height);
 				leftClick();
 				break;
@@ -158,9 +158,10 @@ public class main {
 		System.out.println(message);
 	}
 
-	static Process exec(String cmd) throws Exception {
-		return Runtime.getRuntime().exec(cmd);
-	}
+    static Process exec(String cmd) throws Exception {
+    	print(cmd);
+        return Runtime.getRuntime().exec(cmd);
+    }
 	
 	static void leftClick() throws Exception {
 		r.mousePress(InputEvent.BUTTON1_MASK);
