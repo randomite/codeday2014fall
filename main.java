@@ -1,9 +1,7 @@
 import java.awt.Dimension;
-import java.awt.KeyboardFocusManager;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
-import java.awt.Window;
 import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -14,10 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
-
 import javax.imageio.ImageIO;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 
 class Show {
 	String nameContains;
@@ -31,7 +26,6 @@ class Show {
 	}
 }
 
-// yo
 public class main {
 
 	static Dimension sz;
