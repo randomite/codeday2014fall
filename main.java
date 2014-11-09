@@ -312,21 +312,15 @@ class gui extends JFrame implements MouseListener {
 	static JFrame frame;
 	static Container c;
 	static JTable table;
-	static JButton addBtn, startBtn;
+	static JButton addBtn, startBtn, delBtn;
 	static JTextField showName, showSecsIn, showSecsSkip, delayField;
 	
 	public static ArrayList<Show> shows = new ArrayList<Show>();
 		
 	public gui() throws Exception {
-		String showFileData = new String(Files.readAllBytes(Paths.get("shows")));		
-		String[] showDataLines = showFileData.split("\n");
-		for (String line : showDataLines) {
-			line=line.trim();
-			shows.add(new Show(line.split(",")[0], Integer.parseInt(line.split(",")[1]), Integer.parseInt(line.split(",")[2])));
-		}
-		
+		read();
 		setTitle("Netflix Skip");
-		setBounds(300, 300, 510, 400);
+		setBounds(300, 300, 510, 450);
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBackground(Color.WHITE);
@@ -347,12 +341,26 @@ class gui extends JFrame implements MouseListener {
 		table.setModel(new DefaultTableModel(showData, cols));
 		table.setRowHeight(25);
 		table.setBackground(Color.WHITE);
-		table.setRowSelectionAllowed(false);
+		//table.setRowSelectionAllowed(false);
 		table.getColumnModel().getColumn(0).setMaxWidth(300);
 		table.getColumnModel().getColumn(1).setMaxWidth(100);
 		table.getColumnModel().getColumn(2).setMaxWidth(100);
+		table.setPreferredSize(new Dimension(500,200));
 		JScrollPane scrollPane = new JScrollPane(table);
 		panel.add(scrollPane);
+		
+		JPanel delpanel = new JPanel();
+		delpanel.setBackground(Color.white);
+		delpanel.setPreferredSize(new Dimension(500,80));
+		delpanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		delpanel.setBorder(BorderFactory.createTitledBorder("Delete Selected Show"));
+		delBtn = new JButton("<html><p style=\"padding:4px 10px;\"><b>DELETE</b></p></html>");
+		delBtn.setBackground(new Color(185,9,11));
+		delBtn.setForeground(Color.white);
+		delBtn.setBorder(BorderFactory.createLineBorder(new Color(185,9,11)));
+		delBtn.addMouseListener(this);
+		delpanel.add(delBtn);
+		
 		
 		JPanel panel2 = new JPanel();
 		panel2.setBackground(Color.white);
@@ -431,10 +439,13 @@ class gui extends JFrame implements MouseListener {
 		c.setLayout(new BoxLayout(c,BoxLayout.Y_AXIS));
 		c.setBackground(Color.WHITE);
 	    c.add(panel);
+	    c.add(delpanel);
 	    c.add(panel2);
 	    c.add(panel3);
 	}
 
+	int selRow;
+	
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		if (e.getSource() == addBtn) {
@@ -453,6 +464,14 @@ class gui extends JFrame implements MouseListener {
 			catch(Exception ex) {}
 		}else if(e.getSource() == startBtn){
 			main.time = Integer.parseInt(delayField.getText());
+		}
+		else if (e.getSource() == delBtn) {
+			selRow = table.getSelectedRow();
+			((DefaultTableModel)(table.getModel())).removeRow(selRow);
+			shows.remove(selRow);
+			try {
+				write();
+			} catch (Exception ex) {}
 		}
 	}
 
@@ -477,6 +496,15 @@ class gui extends JFrame implements MouseListener {
 			writer.println(line);
 		}
 		writer.close();
+	}
+	
+	public static void read() throws Exception {
+		String showFileData = new String(Files.readAllBytes(Paths.get("shows")));		
+		String[] showDataLines = showFileData.split("\n");
+		for (String line : showDataLines) {
+			line=line.trim();
+			shows.add(new Show(line.split(",")[0], Integer.parseInt(line.split(",")[1]), Integer.parseInt(line.split(",")[2])));
+		}
 	}
 	
 	
