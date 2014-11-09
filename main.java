@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.imageio.ImageIO;
-//Runtime.getRuntime().exec("convert -negate "+text+" -edge 50 "+text).waitFor();
 
 public class main {
 	
