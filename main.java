@@ -6,6 +6,8 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -244,7 +246,7 @@ public class main {
 				result=convertStreamToString(exec("xdotool getwindowfocus getwindowname").getInputStream());
 			}
 			System.out.println(result);
-		}while(!result.toLowerCase().contains("chrome"));
+		}while(!(result.toLowerCase().contains("chrome") && (result.toLowerCase().contains("netflix") || !ostype.equals(ostype.Linux))));
 		Thread.sleep(time*1000);
 		sz = Toolkit.getDefaultToolkit().getScreenSize();
 		width = sz.getWidth();
@@ -346,6 +348,7 @@ class gui extends JFrame implements MouseListener {
 		table.getColumnModel().getColumn(1).setMaxWidth(100);
 		table.getColumnModel().getColumn(2).setMaxWidth(100);
 		table.setPreferredSize(new Dimension(500,200));
+		
 		JScrollPane scrollPane = new JScrollPane(table);
 		panel.add(scrollPane);
 		
