@@ -6,16 +6,25 @@ import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
-import java.util.Locale;
+
+class Show {
+	String nameContains;
+	int secsIn;
+	int secsSkip;
+
+	public Show(String nameContains, int secsIn, int secsSkip) {
+		this.nameContains = nameContains.toLowerCase();
+		this.secsIn = secsIn;
+		this.secsSkip = secsSkip;
+	}
+}
 
 public class main {
 
@@ -28,31 +37,48 @@ public class main {
 	static String path;
 	static double width;
 	static double height;
+	static Show shows[];
+	static String cfs = "convert +repage -crop %dx%d+%d+%d";
+	static String numsOnly = "tessedit_char_whitelist=0123456789";
+
+	static String tess(String cmd, String config) throws Exception {
+		OsCheck.OSType ostype = OsCheck.getOperatingSystemType();
+		if (config.length() != 0) {
+			cmd += " -c ";
+			if (ostype == ostype.MacOS)
+				cmd += path + "config";
+			else {
+				cmd += config;
+			}
+		}
+		exec(cmd).waitFor();
+		return new String(Files.readAllBytes(Paths.get(path, "out.txt")));
+	}
+
+	static String tess(String cmd) throws Exception {
+		return tess(cmd, "");
+	}
 
 	static char getCh(double x1, double h, double xo, char m) throws Exception {
-		String c11 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate text.png ch.png";
-		String c1 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate -bordercolor black -border 1x1 -fill white -floodfill +0+0 black -shave 1x1 text.png ch.png";
-		OsCheck.OSType ostype = OsCheck.getOperatingSystemType();
-		String c2;
-		if (ostype == ostype.MacOS)
-			c2 = "tesseract -psm 10 " + ch + " " + path + "out -c " + path
-					+ "config";
-		else {
-			c2 = "tesseract -psm 10 " + ch + " " + path
-					+ "out -c tessedit_char_whitelist=0123456789";
-		}
-		exec(String.format(c1, (int) x1, (int) h, (int) xo)).waitFor();
-		exec(c2).waitFor();
+		String c11 = cfs
+				+ " -threshold 90%% -edge 50 -threshold 90%% -negate text.png ch.png";
+		String c1 = cfs
+				+ " -threshold 90%% -edge 50 -threshold 90%% -negate -bordercolor black -border 1x1 -fill white -floodfill +0+0 black -shave 1x1 text.png ch.png";
+
+		exec(String.format(c1, (int) x1, (int) h, (int) xo, 0)).waitFor();
+		String c2 = "tesseract -psm 10 " + ch + " " + path + "out";
+		String s = tess(c2, numsOnly);
 		char c = 0;
-		String s = new String(Files.readAllBytes(Paths.get(path, "out.txt")));
 		if (s.length() != 0)
 			c = s.charAt(0);
 		if (!(c >= '0' && c <= m)) {
 			print("C11");
-			exec(String.format(c11, (int) x1, (int) h, (int) xo)).waitFor();
-			exec(c2).waitFor();
-			c = new String(Files.readAllBytes(Paths.get(s, "out.txt")))
-					.charAt(0);
+			exec(String.format(c11, (int) x1, (int) h, (int) xo, 0)).waitFor();
+			s = tess(c2, numsOnly);
+			if(s.length() == 0)
+				return ' ';
+			else
+				return s.charAt(0);
 		}
 		return c > m ? m : c;
 	}
@@ -64,38 +90,52 @@ public class main {
 		Thread.sleep(1000);
 		capture = r.createScreenCapture(screenRect);
 		ImageIO.write(capture, "png", new File(out));
-		double x1 = width * 1662.0 / 1920;
-		double y1 = height * 903.0 / 1080;
-		double x2 = width * 1728.0 / 1920;
-		double y2 = height * 923.0 / 1080;
-		print(x1 + "," + y1 + " | " + x2 + "," + y2);
+		double x1, y1, w1, h1;
+		x1 = width * 337.0 / 1920;
+		y1 = height * 954.0 / 1080;
+		w1 = width * 1084.0 / 1920;
+		h1 = height * 49.0 / 1080;
+
+		exec(String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)+ " " + out + " " + text).waitFor();
+		int ts = 0;
+		String name = tess("tesseract -psm 7 "+text+" out").toLowerCase();
+		print(name);
+		for(Show show : shows){
+			if(name.contains(show.nameContains)){
+				Thread.sleep(show.secsIn);
+				ts = show.secsSkip;
+				System.out.println(show.secsSkip);
+			}
+		}
+		
+		x1 = width * 1662.0 / 1920;
+		y1 = height * 903.0 / 1080;
+		w1 = width * 66.0 / 1920;
+		h1 = height * 20.0 / 1080;
+		print(x1 + "," + y1 + " | " + w1 + "," + h1);
 		exec(
-				"convert " + out + " +repage -crop " + (x2 - x1) + "x"
-						+ (y2 - y1) + "+" + x1 + "+" + y1 + " " + text)
-				.waitFor();
-		double w = (x2 - x1);
-		double h = (y2 - y1);
-		x1 = 14.0 / w * w;
-		x2 = 10.0 / w * w;
+				String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)
+						+ " " + out + " " + text).waitFor();
+		x1 = 14.0 * width / 1920;
+		w1 = 10.0 * width / 1920;
 		double xo = 0;
 		String f = "";
-		f += getCh(x1, h, xo, '9');
+		f += getCh(x1, h1, xo, '9');
 		xo += x1;
-		f += getCh(x1, h, xo, '9');
-		int mins = Integer.parseInt(f);
+		f += getCh(x1, h1, xo, '9');
+		int mins = Integer.parseInt(f.trim());
 		print(mins);
 		f = "";
-		xo += x1 + x2;
-		f += getCh(x1, h, xo, '5');
+		xo += x1 + w1;
+		f += getCh(x1, h1, xo, '5');
 		xo += x1;
-		f += getCh(x1, h, xo, '9');
-		int secs = Integer.parseInt(f);
+		f += getCh(x1, h1, xo, '9');
+		int secs = Integer.parseInt(f.trim());
 		print(mins + ":" + secs);
 		x1 = 192.0 / 1920 * width;
 		y1 = 913.0 / 1080 * height;
-		x2 = 1624.0 / 1920 * width;
-		int ts = 34;
-		double x = (x2 - x1) * ((double) ts / (mins * 60 + secs)) + x1;
+		h1 = 1432.0 / 1920 * width;
+		double x = h1 * ((double) ts / (mins * 60 + secs)) + x1;
 		print(y1);
 		moveTo(x, y1);
 		leftClick();
@@ -115,10 +155,12 @@ public class main {
 			capture = r.createScreenCapture(screenRect);
 			ImageIO.write(capture, "png", new File(out));
 			BufferedReader br = new BufferedReader(
-					new InputStreamReader(exec(
-							"convert -crop " + w1 + "x" + h1 + "+" + x1 + "+"
-									+ y1 + " -resize 1x1 " + out + " txt:")
-							.getInputStream()));
+					new InputStreamReader(
+							exec(
+									String.format(cfs, (int) w1, (int) h1,
+											(int) x1, (int) y1)
+											+ " -resize 1x1 " + out + " txt:")
+									.getInputStream()));
 			String line;
 			String s = "";
 			while ((line = br.readLine()) != null) {
@@ -133,27 +175,22 @@ public class main {
 	}
 
 	static void next() throws Exception {
-		double xp1 = 1143.0 / 1920;
-		double yp1 = 1013.0 / 1080;
-		double xp2 = 1303.0 / 1920;
-		double yp2 = 1031.0 / 1080;
-		double x1 = width * xp1;
-		double y1 = height * yp1;
-		double x2 = width * xp2;
-		double y2 = height * yp2;
+		double x1 = width * 1143.0 / 1920;
+		double y1 = height * 1013.0 / 1080;
+		double w1 = width * 160.0 / 1920;
+		double h1 = height * 28.0 / 1080;
 		while (true) {
 			Thread.sleep(1000);
 			capture = r.createScreenCapture(screenRect);
 			ImageIO.write(capture, "png", new File(out));
 			exec(
-					"convert " + out + " +repage -crop " + (x2 - x1) + "x"
-							+ (y2 - y1) + "+" + x1 + "+" + y1 + " " + text)
-					.waitFor();
+					String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)
+							+ " " + out + " " + text).waitFor();
 			exec("tesseract -psm 7 " + text + " out").waitFor();
 			String back = new String(Files.readAllBytes(Paths.get(path,
 					"out.txt")));
 			if (back.toLowerCase().contains("back")) {
-				moveTo(x2, y2 - 0.1 * height);
+				moveTo(x1 + w1, y1 + h1 - 0.1 * height);
 				leftClick();
 				break;
 			}
@@ -163,6 +200,8 @@ public class main {
 	}
 
 	public static void main(String[] args) throws Exception {
+		shows = new Show[] { new Show("American Dad!", 0, 34),
+				new Show("Bob's Burgers", 0, 21) };
 		Thread.sleep(5000);
 		sz = Toolkit.getDefaultToolkit().getScreenSize();
 		width = sz.getWidth();
