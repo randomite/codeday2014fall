@@ -1,7 +1,9 @@
 import java.awt.Dimension;
+import java.awt.KeyboardFocusManager;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -13,6 +15,8 @@ import java.nio.file.Paths;
 import java.util.Locale;
 
 import javax.imageio.ImageIO;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 
 class Show {
 	String nameContains;
@@ -25,7 +29,8 @@ class Show {
 		this.secsSkip = secsSkip;
 	}
 }
-//yo
+
+// yo
 public class main {
 
 	static Dimension sz;
@@ -40,9 +45,8 @@ public class main {
 	static Show shows[];
 	static String cfs = "convert +repage -crop %dx%d+%d+%d";
 	static String numsOnly = "tessedit_char_whitelist=0123456789";
-
+	static OsCheck.OSType ostype = OsCheck.getOperatingSystemType();
 	static String tess(String cmd, String config) throws Exception {
-		OsCheck.OSType ostype = OsCheck.getOperatingSystemType();
 		if (config.length() != 0) {
 			cmd += " -c ";
 			if (ostype == ostype.MacOS)
@@ -75,7 +79,7 @@ public class main {
 			print("C11");
 			exec(String.format(c11, (int) x1, (int) h, (int) xo, 0)).waitFor();
 			s = tess(c2, numsOnly);
-			if(s.length() == 0)
+			if (s.length() == 0)
 				return ' ';
 			else
 				return s.charAt(0);
@@ -96,18 +100,20 @@ public class main {
 		w1 = width * 1084.0 / 1920;
 		h1 = height * 49.0 / 1080;
 
-		exec(String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)+ " " + out + " " + text).waitFor();
+		exec(
+				String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)
+						+ " " + out + " " + text).waitFor();
 		int ts = 0;
-		String name = tess("tesseract -psm 7 "+text+" out").toLowerCase();
+		String name = tess("tesseract -psm 7 " + text + " out").toLowerCase();
 		print(name);
-		for(Show show : shows){
-			if(name.contains(show.nameContains)){
+		for (Show show : shows) {
+			if (name.contains(show.nameContains)) {
 				Thread.sleep(show.secsIn);
 				ts = show.secsSkip;
 				System.out.println(show.secsSkip);
 			}
 		}
-		
+
 		x1 = width * 1662.0 / 1920;
 		y1 = height * 903.0 / 1080;
 		w1 = width * 66.0 / 1920;
@@ -186,11 +192,12 @@ public class main {
 			exec(
 					String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)
 							+ " " + out + " " + text).waitFor();
-			
+
 			String back = tess("tesseract -psm 7 " + text + " out");
 			back = back.toLowerCase();
 			print(back);
-			if (back.contains("back") || back.contains("beck") || back.contains("browse")) {
+			if (back.contains("back") || back.contains("beck")
+					|| back.contains("browse")) {
 				moveTo(x1 + w1, y1 + h1 - 0.1 * height);
 				leftClick();
 				break;
@@ -199,11 +206,27 @@ public class main {
 		Thread.sleep(1000);
 		loading();
 	}
-
+	static String convertStreamToString(java.io.InputStream is) {
+	    java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+	    return s.hasNext() ? s.next() : "";
+	}
 	public static void main(String[] args) throws Exception {
 		shows = new Show[] { new Show("American Dad!", 0, 34),
-				new Show("Bob's Burgers", 0, 21) };
-		Thread.sleep(5000);
+				new Show("Bob's Burgers", 0, 21), new Show("Arthur", 0, 74) };
+		String result;
+		do{
+			if(ostype.equals(ostype.MacOS)){
+		        final String script="tell application \"System Events\"\n" +
+		                "\tname of application processes whose frontmost is tru\n" +
+		                "end";
+		        ScriptEngine appleScript=new ScriptEngineManager().getEngineByName("AppleScript");
+		        result=(String)appleScript.eval(script);
+			}else{
+				result=convertStreamToString(exec("xdotool getwindowfocus getwindowname").getInputStream());
+			}
+			System.out.println(result);
+		}while(!result.toLowerCase().contains("netflix - google chrome"));
+		Thread.sleep(2000);
 		sz = Toolkit.getDefaultToolkit().getScreenSize();
 		width = sz.getWidth();
 		height = sz.getHeight();
