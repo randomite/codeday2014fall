@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -217,15 +218,17 @@ public class main {
 		do{
 			if(ostype.equals(ostype.MacOS)){
 		        final String script="tell application \"System Events\"\n" +
-		                "\tname of application processes whose frontmost is tru\n" +
+		                "\tname of application processes whose frontmost is true\n" +
 		                "end";
-		        ScriptEngine appleScript=new ScriptEngineManager().getEngineByName("AppleScript");
-		        result=(String)appleScript.eval(script);
+		        PrintWriter out = new PrintWriter("test");
+		        out.write(script);
+		        out.close();
+				result=convertStreamToString(exec("osascript test").getInputStream());
 			}else{
 				result=convertStreamToString(exec("xdotool getwindowfocus getwindowname").getInputStream());
 			}
 			System.out.println(result);
-		}while(!result.toLowerCase().contains("netflix - google chrome"));
+		}while(!result.toLowerCase().contains("chrome"));
 		Thread.sleep(2000);
 		sz = Toolkit.getDefaultToolkit().getScreenSize();
 		width = sz.getWidth();
