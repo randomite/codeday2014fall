@@ -1,25 +1,29 @@
+import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Locale;
-import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Font;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Vector;
+
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -313,9 +317,14 @@ class gui extends JFrame implements MouseListener {
 	
 	public static ArrayList<Show> shows = new ArrayList<Show>();
 		
-	public gui() {
-		shows.add(new Show("American Dad!", 0, 34));
-		shows.add(new Show("Bob's Burgers", 0, 21));
+	public gui() throws Exception {
+		String showFileData = new String(Files.readAllBytes(Paths.get("shows")));		
+		String[] showDataLines = showFileData.split("\n");
+		for (String line : showDataLines) {
+			line=line.trim();
+			shows.add(new Show(line.split(",")[0], Integer.parseInt(line.split(",")[1]), Integer.parseInt(line.split(",")[2])));
+		}
+		
 		setTitle("Netflix Skip");
 		setBounds(300, 300, 510, 400);
 		setResizable(false);
@@ -438,6 +447,10 @@ class gui extends JFrame implements MouseListener {
 			showName.setText("");
 			showSecsIn.setText("");
 			showSecsSkip.setText("");
+			try {
+				write();
+			}
+			catch(Exception ex) {}
 		}else if(e.getSource() == startBtn){
 			main.time = Integer.parseInt(delayField.getText());
 		}
@@ -454,6 +467,17 @@ class gui extends JFrame implements MouseListener {
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {	}
+	
+	
+	public static void write() throws Exception {
+		String line = "";
+		PrintWriter writer = new PrintWriter("shows", "UTF-8");
+		for(Show show : shows) {
+			line = show.nameContains+","+show.secsIn+","+show.secsSkip;
+			writer.println(line);
+		}
+		writer.close();
+	}
 	
 	
 	public static void setUIFont (javax.swing.plaf.FontUIResource f){
