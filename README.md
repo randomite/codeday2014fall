@@ -8,4 +8,14 @@ Breaking Bad
 16
 
 36 minutes saved with breaking bad
-This is rounded to 1 hour
+
+
+Star Trek Original 
+
+40 seconds
+30
+26
+24
+
+53 minutes saved with Star Trek  
+
