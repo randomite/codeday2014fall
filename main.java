@@ -25,7 +25,7 @@ class Show {
 		this.secsSkip = secsSkip;
 	}
 }
-
+//yo
 public class main {
 
 	static Dimension sz;
@@ -85,9 +85,9 @@ public class main {
 
 	static void skip() throws Exception {
 		moveTo(100, 100);
-		Thread.sleep(1000);
+		Thread.sleep(250);
 		moveTo(200, 200);
-		Thread.sleep(1000);
+		Thread.sleep(250);
 		capture = r.createScreenCapture(screenRect);
 		ImageIO.write(capture, "png", new File(out));
 		double x1, y1, w1, h1;
@@ -186,10 +186,11 @@ public class main {
 			exec(
 					String.format(cfs, (int) w1, (int) h1, (int) x1, (int) y1)
 							+ " " + out + " " + text).waitFor();
-			exec("tesseract -psm 7 " + text + " out").waitFor();
-			String back = new String(Files.readAllBytes(Paths.get(path,
-					"out.txt")));
-			if (back.toLowerCase().contains("back")) {
+			
+			String back = tess("tesseract -psm 7 " + text + " out");
+			back = back.toLowerCase();
+			print(back);
+			if (back.contains("back") || back.contains("beck") || back.contains("browse")) {
 				moveTo(x1 + w1, y1 + h1 - 0.1 * height);
 				leftClick();
 				break;
