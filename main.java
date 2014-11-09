@@ -4,8 +4,10 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,66 +21,97 @@ public class main {
 	static Robot r;
 	static Rectangle screenRect;
 	static BufferedImage capture;
-	static String out, text;
+	static String out, text, ch;
 	static Path currentRelativePath;
-	static String s;
+	static String path;
 	static double width;
 	static double height;
-	
-	static void skip() throws Exception {	
-		s = Paths.get("").toAbsolutePath().toString() + "/";
-		print(s);
-		out = s + "out.png";
-		text = s + "text.png";
+	static char getCh(double x1, double h, double xo, char m) throws Exception{
+		String c11 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate text.png ch.png";
+		String c1 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate -bordercolor black -border 1x1 -fill white -floodfill +0+0 black -shave 1x1 text.png ch.png";
+		String c2 = "tesseract -c tessedit_char_whitelist=0123456789 -psm 10 "+ch+" out";
+		exec(String.format(c1, (int)x1, (int)h, (int)xo)).waitFor();
+		exec(c2).waitFor();
+		char c = 0;
+		String s = new String(Files.readAllBytes(Paths.get(path,"out.txt")));
+		if(s.length() != 0)
+			c = s.charAt(0);
+		if(!(c >= '0' && c <= m)){
+			print("C11");
+			exec(String.format(c11, (int)x1, (int)h, (int)xo)).waitFor();
+			exec(c2).waitFor();
+			c = new String(Files.readAllBytes(Paths.get(s,"out.txt"))).charAt(0);
+		}
+		return c > m ? m : c;
+	}
+	static void skip() throws Exception {
 		moveTo(100,100);
+		Thread.sleep(1000);
 		moveTo(200,200);
+		Thread.sleep(1000);
 		capture = r.createScreenCapture(screenRect);
 		ImageIO.write(capture, "png", new File(out));
-		double xp1 = 1661.0/1920;
-		double yp1 = 902.0/1080;
-		double xp2 = 1728.0/1920;
-		double yp2 = 924.0/1080;
-		double x1 = width*xp1;
-		double y1 = height*yp1;
-		double x2 = width*xp2;
-		double y2 = height*yp2;
+		double x1 = width*1662.0/1920;
+		double y1 = height*903.0/1080;
+		double x2 = width*1728.0/1920;
+		double y2 = height*923.0/1080;
 		print(x1+","+y1 + " | " + x2+","+y2);
-		exec("convert "+out+" +repage -crop "+(x2-x1)+"x"+(y2-y1)+"+"+x1+"+"+y1+" "+text);
-		exec("tesseract -psm 7 "+text+" out");
-		char[] a = new String(Files.readAllBytes(Paths.get(s,"out.txt"))).toCharArray();
+		exec("convert "+out+" +repage -crop "+(x2-x1)+"x"+(y2-y1)+"+"+x1+"+"+y1+" "+text).waitFor();
+		double w=(x2-x1);
+		double h=(y2-y1);
+		x1 = 14.0/w*w;
+		x2 = 10.0/w*w;
+		double xo = 0;
 		String f = "";
-		int mins = 0;
-		int secs = 0;
-		for (char c : a) {
-			if (c>='0' && c<='9') {
-				f += c;
-			}
-			if (f.length()==2 && mins==0) {
-				mins = Integer.parseInt(f);
-				f = "";
-			}
-			else if (f.length()==2) {
-				secs = Integer.parseInt(String.valueOf(f.charAt(0)>6?'6':f.charAt(0))+f.charAt(1));
-				break;
-			}
-		}
-		
+		String c1 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate text.png ch.png";
+		String c11 = "convert +repage -crop %dx%d+%d+0 -threshold 90%% -edge 50 -threshold 90%% -negate -bordercolor black -border 1x1 -fill white -floodfill +0+0 black -shave 1x1 text.png ch.png";
+		String c2 = "tesseract -c tessedit_char_whitelist=0123456789 -psm 10 "+ch+" out";
+		f += getCh(x1, h, xo, '9');
+		xo += x1;
+		f += getCh(x1, h, xo, '9');
+		int mins = Integer.parseInt(f);
+		print(mins);
+		f = "";
+		xo += x1+x2;
+		f += getCh(x1, h, xo, '5');
+		xo += x1;
+		f += getCh(x1, h, xo, '9');
+		int secs = Integer.parseInt(f);
 		print(mins+":"+secs);
-		xp1 = 192.0/1920;
-		yp1 = 913.0/1080;
-		xp2 = 1624.0/1920;
-		x1 = xp1*width;
-		y1 = yp1*height;
-		x2 = xp2*width;
-		int ts = 22;
+		x1 = 192.0/1920*width;
+		y1 = 913.0/1080*height;
+		x2 = 1624.0/1920*width;
+		int ts = 34;
 		double x = (x2-x1)*((double)ts/(mins*60+secs))+x1;
 		print(y1);
 		moveTo(x, y1);
 		leftClick();
 		leftClick();
-		moveTo(x1, y1+height*0.05);
-		leftClick();
+		//moveTo(x1, y1+height*0.05);
+		//leftClick();
+		Thread.sleep(5000);
 		next();
+	}
+	
+	static void loading() throws Exception{
+		double x1 = 345.0/1920*width;
+		double y1 = 945.0/1080*height;
+		double w1 = 1059.0/1920*width;
+		double h1 = 20.0/1080*height;
+		while(true){
+			capture = r.createScreenCapture(screenRect);
+			ImageIO.write(capture, "png", new File(out));
+			BufferedReader br = new BufferedReader(new InputStreamReader(exec("convert -crop "+w1+"x"+h1+"+"+x1+"+"+y1+" -resize 1x1 " + out +" txt:").getInputStream()));
+			String line;
+			String s = "";
+			while ((line = br.readLine ()) != null) {
+			    s += line;
+			}
+			if(s.contains("( 38, 38, 38)")){
+				skip();
+				return; 
+			}
+		}
 	}
 	
 	static void next() throws Exception{
@@ -94,16 +127,17 @@ public class main {
 			Thread.sleep(1000);
 			capture = r.createScreenCapture(screenRect);
 			ImageIO.write(capture, "png", new File(out));
-			exec("convert "+out+" +repage -crop " + (x2-x1) + "x" + (y2-y1) + "+" + x1 + "+" +y1+ " " + text);
-			exec("tesseract -psm 7 "+text+" out");
-			String back = new String(Files.readAllBytes(Paths.get(s,"out.txt")));
+			exec("convert "+out+" +repage -crop " + (x2-x1) + "x" + (y2-y1) + "+" + x1 + "+" +y1+ " " + text).waitFor();
+			exec("tesseract -psm 7 "+text+" out").waitFor();
+			String back = new String(Files.readAllBytes(Paths.get(path,"out.txt")));
 			if (back.toLowerCase().contains("back to browse")) {
 				moveTo(x2, y2-0.1*height);
 				leftClick();
 				break;
 			}
 		}
-		skip();
+		Thread.sleep(1000);
+		loading();
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -113,6 +147,11 @@ public class main {
 		height = sz.getHeight();
 		r = new Robot();
 		screenRect = new Rectangle(sz);
+		path = Paths.get("").toAbsolutePath().toString() + "/";
+		print(path);
+		out = path + "out.png";
+		text = path + "text.png";
+		ch = path + "ch.png";
 		skip();
 	}
 	
@@ -126,9 +165,9 @@ public class main {
 	
 	static void leftClick() throws Exception {
 		r.mousePress(InputEvent.BUTTON1_MASK);
-		Thread.sleep(10);
+		Thread.sleep(100);
 		r.mouseRelease(InputEvent.BUTTON1_MASK);
-		Thread.sleep(10000);
+		Thread.sleep(100);
 	}
 	
 	static void moveTo(double x, double y) throws Exception {
